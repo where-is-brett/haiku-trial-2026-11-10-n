@@ -34,3 +34,29 @@ test('a row that cannot be stored leaves nothing from the statement stored', () 
   assert.throws(() => importRows(db, bad));
   assert.equal(count(db), 0);
 });
+
+test('importing the same rows twice adds nothing the second time', () => {
+  const db = ledger();
+  importRows(db, ROWS);
+  assert.deepEqual(importRows(db, ROWS), { added: 0, skipped: 2 });
+  assert.equal(count(db), 2);
+});
+
+test('two identical rows in one file are stored once', () => {
+  const db = ledger();
+  const twice = [ROWS[0], ROWS[0]];
+  assert.deepEqual(importRows(db, twice), { added: 1, skipped: 1 });
+  assert.equal(count(db), 1);
+});
+
+test('same date and description with different cents is not a duplicate', () => {
+  const db = ledger();
+  importRows(db, [ROWS[0]]);
+  assert.deepEqual(importRows(db, [{ ...ROWS[0], cents: 1300 }]), { added: 1, skipped: 0 });
+});
+
+test('same date and cents with a different description is not a duplicate', () => {
+  const db = ledger();
+  importRows(db, [ROWS[0]]);
+  assert.deepEqual(importRows(db, [{ ...ROWS[0], description: 'corner shop' }]), { added: 1, skipped: 0 });
+});
