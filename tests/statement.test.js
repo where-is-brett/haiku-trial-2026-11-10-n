@@ -83,3 +83,74 @@ test('a one-digit day and month are read', () => {
   const [row] = parseStatement(`${HEADER}1/9/2026,Shop,1.00`);
   assert.equal(row.date, '2026-09-01');
 });
+
+test('a header that is not Date, Description, Amount is refused', () => {
+  assert.throws(
+    () => parseStatement('Date,Payee,Amount\n01/09/2026,Rent,(850.00)'),
+    (err) => err instanceof StatementError && /Date, Description, Amount/.test(err.message),
+  );
+});
+
+test('an empty file is refused', () => {
+  assert.throws(() => parseStatement(''), StatementError);
+});
+
+test('a date that is not DD/MM/YYYY is refused', () => {
+  assert.throws(() => parseStatement(`${HEADER}2026-09-01,Rent,850.00`), StatementError);
+});
+
+test('a day or month out of range is refused', () => {
+  assert.throws(() => parseStatement(`${HEADER}31/13/2026,Rent,850.00`), StatementError);
+});
+
+test('an amount that is not a number is refused', () => {
+  assert.throws(() => parseStatement(`${HEADER}01/09/2026,Rent,abc`), StatementError);
+});
+
+test('an amount that is both bracketed and minus-signed is refused', () => {
+  assert.throws(() => parseStatement(`${HEADER}01/09/2026,Rent,(-40.00)`), StatementError);
+});
+
+test('a row with the wrong number of fields is refused', () => {
+  assert.throws(() => parseStatement(`${HEADER}01/09/2026,Rent`), StatementError);
+});
+
+test('a row with two fields is refused as a missing amount', () => {
+  assert.throws(
+    () => parseStatement(`${HEADER}01/09/2026,Rent`),
+    (err) => err instanceof StatementError && /amount/.test(err.message) && /row 1/.test(err.message),
+  );
+});
+
+test('a day of zero or above 31 is refused', () => {
+  assert.throws(() => parseStatement(`${HEADER}00/09/2026,Rent,1.00`), StatementError);
+  assert.throws(() => parseStatement(`${HEADER}32/09/2026,Rent,1.00`), StatementError);
+});
+
+test('a month of zero is refused', () => {
+  assert.throws(() => parseStatement(`${HEADER}01/00/2026,Rent,1.00`), StatementError);
+});
+
+test('a two-digit year is refused without parsing it', () => {
+  assert.throws(() => parseStatement(`${HEADER}01/09/26,Rent,1.00`), StatementError);
+});
+
+test('an unclosed double quote at the end of a line is refused', () => {
+  assert.throws(
+    () => parseStatement(`${HEADER}01/09/2026,"Tea,3.00`),
+    (err) => err instanceof StatementError && /unclosed quote/.test(err.message),
+  );
+});
+
+test('an amount too large to hold as cents is refused', () => {
+  assert.throws(() => parseStatement(`${HEADER}01/09/2026,Rent,${'9'.repeat(400)}`), StatementError);
+});
+
+test('a BOM-prefixed Date,Description,Amount header is accepted', () => {
+  const rows = parseStatement(`﻿${HEADER}01/09/2026,Rent,1.00`);
+  assert.equal(rows.length, 1);
+});
+
+test('a BOM-prefixed Date,Payee,Amount header is refused', () => {
+  assert.throws(() => parseStatement('﻿Date,Payee,Amount\n01/09/2026,Rent,1.00'), StatementError);
+});
