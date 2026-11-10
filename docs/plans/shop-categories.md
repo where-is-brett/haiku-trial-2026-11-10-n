@@ -1,6 +1,6 @@
 # Shop categories Implementation Plan
 
-> **For agentic workers:** Implement this plan task by task, in order. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For the implementer:** Work through this plan task by task, in order. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Every transaction gets a category key, taken from the shop its description names.
 
