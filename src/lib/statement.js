@@ -9,7 +9,7 @@ export class StatementError extends Error {}
 // A field after the amount may only be the rest of an unquoted thousands group, such as 234.50 in £1,234.50.
 const THOUSANDS_CONTINUATION = /^\d{3}(\.\d+)?$/;
 // Digits with commas only as thousands groups, such as 1,234.50.
-const UNSIGNED_AMOUNT = /^\d+(,\d{3})*(\.\d+)?$/;
+const UNSIGNED_AMOUNT = /^(\d+|\d{1,3}(,\d{3})+)(\.\d+)?$/;
 
 // Reads statement CSV text into rows of { date, description, cents }.
 // Outflows are negative: a bracketed or minus-signed amount is an outflow.

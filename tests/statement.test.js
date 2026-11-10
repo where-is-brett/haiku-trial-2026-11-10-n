@@ -75,6 +75,10 @@ test('an amount with a currency sign and thousands separator is read', () => {
   assert.equal(row.cents, 123450);
 });
 
+test('an unquoted amount with a four-digit lead group and a comma group is refused', () => {
+  assert.throws(() => parseStatement(`${HEADER}01/09/2026,Shop,1020,500`), StatementError);
+});
+
 test('a one-digit day and month are read', () => {
   const [row] = parseStatement(`${HEADER}1/9/2026,Shop,1.00`);
   assert.equal(row.date, '2026-09-01');
