@@ -43,3 +43,13 @@ export const SHOPS = [
   { name: 'Tidepool Interest', category: 'income' },
   { name: 'Oakridge Dividends', category: 'income' },
 ];
+
+// Returns the category key for a description. A description belongs to a
+// shop when it contains the shop name, ignoring case; the first shop listed
+// that matches decides. Anything else, including a missing description, is other.
+export function categoryFor(description) {
+  if (typeof description !== 'string' || description === '') return 'other';
+  const text = description.toLowerCase();
+  const shop = SHOPS.find((s) => text.includes(s.name.toLowerCase()));
+  return shop ? shop.category : 'other';
+}
