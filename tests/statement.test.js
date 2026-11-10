@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseStatement } from '../src/lib/statement.js';
+import { parseStatement, StatementError } from '../src/lib/statement.js';
 
 const HEADER = 'Date,Description,Amount\n';
 
@@ -26,8 +26,38 @@ test('a plain amount is read as a positive figure', () => {
 });
 
 test('a byte-order mark before the header is ignored', () => {
-  const rows = parseStatement(`﻿${HEADER}31/08/2026,Corner shop,12.50`);
-  assert.equal(rows.length, 1);
+  const [row] = parseStatement(`﻿${HEADER}31/08/2026,Corner shop,12.50`);
+  assert.equal(row.date, '2026-08-31');
+  assert.equal(row.cents, 1250);
+});
+
+test('a trailing comma after a bracketed amount is refused', () => {
+  assert.throws(() => parseStatement(`${HEADER}01/09/2026,Rent,(850.00),`), StatementError);
+});
+
+test('a field after a bracketed amount is refused', () => {
+  assert.throws(() => parseStatement(`${HEADER}01/09/2026,Rent,(850.00),1020.00`), StatementError);
+});
+
+test('an unquoted extra numeric field is refused', () => {
+  assert.throws(() => parseStatement(`${HEADER}01/09/2026,Shop,45,1020.00`), StatementError);
+});
+
+test('a minus sign after the number is refused', () => {
+  assert.throws(() => parseStatement(`${HEADER}01/09/2026,Coffee,3.20-`), StatementError);
+});
+
+test('a minus sign after the currency sign is refused', () => {
+  assert.throws(() => parseStatement(`${HEADER}01/09/2026,Coffee,£-3.20`), StatementError);
+});
+
+test('a minus sign before the currency sign is an outflow', () => {
+  const [row] = parseStatement(`${HEADER}01/09/2026,Coffee,-£3.20`);
+  assert.equal(row.cents, -320);
+});
+
+test('a double negative is refused', () => {
+  assert.throws(() => parseStatement(`${HEADER}01/09/2026,Rent,(-40.00)`), StatementError);
 });
 
 test('a comma inside quotes stays in the description', () => {
