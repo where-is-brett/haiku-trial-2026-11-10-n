@@ -131,6 +131,46 @@ test('a month of zero is refused', () => {
   assert.throws(() => parseStatement(`${HEADER}01/00/2026,Rent,1.00`), StatementError);
 });
 
+test('a day past the end of its month is refused', () => {
+  assert.throws(() => parseStatement(`${HEADER}31/04/2026,Rent,1.00`), StatementError);
+  assert.throws(() => parseStatement(`${HEADER}31/06/2026,Rent,1.00`), StatementError);
+  assert.throws(() => parseStatement(`${HEADER}31/09/2026,Rent,1.00`), StatementError);
+  assert.throws(() => parseStatement(`${HEADER}31/11/2026,Rent,1.00`), StatementError);
+});
+
+test('29 February in a non-leap year is refused', () => {
+  assert.throws(() => parseStatement(`${HEADER}29/02/2026,Rent,1.00`), StatementError);
+});
+
+test('30 and 31 February are refused', () => {
+  assert.throws(() => parseStatement(`${HEADER}30/02/2026,Rent,1.00`), StatementError);
+  assert.throws(() => parseStatement(`${HEADER}31/02/2026,Rent,1.00`), StatementError);
+});
+
+test('the refusal for an impossible date names its row', () => {
+  assert.throws(
+    () => parseStatement(`${HEADER}01/09/2026,Rent,1.00\n31/02/2026,Rent,1.00`),
+    (err) => err instanceof StatementError && /row 2/.test(err.message),
+  );
+});
+
+test('29 February in a leap year is read', () => {
+  const [row] = parseStatement(`${HEADER}29/02/2028,Rent,1.00`);
+  assert.equal(row.date, '2028-02-29');
+});
+
+test('29 February in a century year divisible by 400 is read', () => {
+  const [row] = parseStatement(`${HEADER}29/02/2000,Rent,1.00`);
+  assert.equal(row.date, '2000-02-29');
+});
+
+test('the last day of a 31-day month is read', () => {
+  const [dec] = parseStatement(`${HEADER}31/12/2026,Rent,1.00`);
+  assert.equal(dec.date, '2026-12-31');
+  const [jan] = parseStatement(`${HEADER}31/01/2026,Rent,1.00`);
+  assert.equal(jan.date, '2026-01-31');
+});
+
 test('a two-digit year is refused without parsing it', () => {
   assert.throws(() => parseStatement(`${HEADER}01/09/26,Rent,1.00`), StatementError);
 });

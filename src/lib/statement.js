@@ -61,7 +61,19 @@ function readDate(text, rowNumber) {
   if (!match || day < 1 || day > 31 || month < 1 || month > 12) {
     throw new StatementError(`row ${rowNumber} has a date that is not DD/MM/YYYY: ${text}`);
   }
+  if (day > daysInMonth(month, Number(match[3]))) {
+    throw new StatementError(`row ${rowNumber} has a date that does not exist in the calendar: ${text}`);
+  }
   return parseDate(text);
+}
+
+// The number of days in a month of a year, with February of a leap year at 29 days.
+function daysInMonth(month, year) {
+  if (month === 2) {
+    const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+    return leap ? 29 : 28;
+  }
+  return [4, 6, 9, 11].includes(month) ? 30 : 31;
 }
 
 // Reads one amount as signed cents. This is the one place the sign rule lives.
